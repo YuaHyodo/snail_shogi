@@ -13,6 +13,7 @@
 
 # 想定している使い方
 - 探索部・機械学習のような速度が非常に重要な部分ではなく、対局サーバーやGUIでの合法手チェックなどの部分に使用する事を想定して設計している。
+- 以上の理由から、高速化にリソースを費やす予定は無い。
 - 速度が欲しい方は、cshogi( https://github.com/TadaoYamaoka/cshogi )、
 python-shogi( https://github.com/gunyarakun/python-shogi )あたりを使う事を強く推奨する。
 
