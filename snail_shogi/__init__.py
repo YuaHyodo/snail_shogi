@@ -155,12 +155,18 @@ class Board:
             if sfen[2][i] in self.hand_piece_index_dict.keys():
                 piece_num = 1
                 if i > 0 and sfen[2][i - 1] in numbers:
-                    piece_num = int(sfen[2][i - 1])
+                    if sfen[2][i - 1] == '0':
+                        piece_num = int(sfen[2][i - 2] + sfen[2][i - 1])
+                    else:
+                        piece_num = int(sfen[2][i - 1])
                 self.pieces_in_hand[0][self.hand_piece_index_dict[sfen[2][i]]] = piece_num
             elif self.piece_white_to_black[sfen[2][i]] in self.hand_piece_index_dict.keys():
                 piece_num = 1
                 if i > 0 and sfen[2][i - 1] in numbers:
-                    piece_num = int(sfen[2][i - 1])
+                    if sfen[2][i - 1] == '0':
+                        piece_num = int(sfen[2][i - 2] + sfen[2][i - 1])
+                    else:
+                        piece_num = int(sfen[2][i - 1])
                 self.pieces_in_hand[1][self.hand_piece_index_dict[self.piece_white_to_black[sfen[2][i]]]] = piece_num
         self.update_pawn_file()
         return
