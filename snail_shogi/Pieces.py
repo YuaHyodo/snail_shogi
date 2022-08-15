@@ -165,7 +165,9 @@ class King(base):
     def __init__(self, color):
         super().__init__()
         self.name = 'king'
-        self.attack_squares = ((-1, -1), (-1, 0), (-1, 1), (-1, 0), (1, 0), (1, -1), (1, 0), (1, 1))
+        self.attack_squares = ((-1, -1), (-1, 0), (-1, 1),
+                                         (0, -1),               (0, 1),
+                                         (1, -1),    (1, 0),   (1, 1))
         self.color = color
         if color == BLACK:
             self.symbol['simple'] = '[K]'

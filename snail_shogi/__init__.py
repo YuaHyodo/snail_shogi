@@ -81,10 +81,10 @@ class Board:
             for x in range(9):
                 rank.append(Square())
                 pieces_rank.append(None)
-                if y in [0, 1, 2]:
-                    rank[x].white_promotable_square  = True
                 if y in [6, 7, 8]:
-                    rank[x].black_promotable_square = True
+                    rank[x].is_white_promotable_square  = True
+                if y in [0, 1, 2]:
+                    rank[x].is_black_promotable_square = True
             self.squares.append(rank)
             self.pieces.append(pieces_rank)
         return
@@ -105,6 +105,7 @@ class Board:
         self.white_pawn_file = [1] * 9
         self.king_square = {'black': [8, 4], 'white': [0, 4]}
         self.turn = BLACK
+        self.update_pawn_file()
         return
 
     def set_sfen(self, sfen):
@@ -160,7 +161,7 @@ class Board:
                 if i > 0 and sfen[2][i - 1] in numbers:
                     piece_num = int(sfen[2][i - 1])
                 self.pieces_in_hand[1][self.hand_piece_index_dict[self.piece_white_to_black[sfen[2][i]]]] = piece_num
-        
+        self.update_pawn_file()
         return
 
     def return_sfen(self):
@@ -261,12 +262,20 @@ class Board:
                     output.append((from_sq[0] + i, from_sq[1]))
         
         else:#斜め移動
-            if to_sq[0] - from_sq[0] > 0:
+            if to_sq[0] > from_sq[0] and to_sq[1] > from_sq[1]:#右斜め下
+                for i in range(1, to_sq[0] - from_sq[0]):
+                    output.append((from_sq[0] + i, from_sq[1] + i))
+                    
+            elif to_sq[0] > from_sq[0] and to_sq[1] < from_sq[1]:#左斜め下
                 for i in range(1, to_sq[0] - from_sq[0]):
                     output.append((from_sq[0] + i, from_sq[1] - i))
-            else:
+                    
+            elif to_sq[0] < from_sq[0] and to_sq[1] > from_sq[1]:#右斜め上
                 for i in range(1, from_sq[0] - to_sq[0]):
-                    output.append((to_sq[0] + i, to_sq[1] - i))
+                    output.append((from_sq[0] - i, from_sq[1] + i))
+            else:#左斜め上
+                for i in range(1, from_sq[0] - to_sq[0]):
+                    output.append((from_sq[0] - i, from_sq[1] - i))
         return output
 
     def is_legal_pseudo(self, move):
@@ -278,7 +287,7 @@ class Board:
                 num = self.pieces_in_hand[0][move['hand_piece_index']]
             else:
                 num = self.pieces_in_hand[1][move['hand_piece_index']]
-            if num < 1:
+            if num == 0:
                 return False
         else:
             move_piece = self.pieces[index[0]][index[1]]
@@ -294,15 +303,13 @@ class Board:
             return False
         if move.get('+'):
             sq = self.squares[index[0]][index[1]]
-            if not (sq.is_black_promotable_square and self.turn == BLACK):
-                return False
-            if not (sq.is_white_promotable_square and self.turn == WHITE):
-                return False
-            sq = self.squares[move['from'][0]][move['from'][1]]
-            if not (sq.is_black_promotable_square and self.turn == BLACK):
-                return False
-            if not (sq.is_white_promotable_square and self.turn == WHITE):
-                return False
+            sq2 = self.squares[move['from'][0]][move['from'][1]]
+            if self.turn == BLACK:
+                if (not sq.is_black_promotable_square) and (not sq2.is_black_promotable_square):
+                    return False
+            else:
+                if (not sq.is_white_promotable_square) and (not sq2.is_white_promotable_square):
+                    return False
         #第三段階: 移動先が味方の駒　もしくは、
         #持ち駒を打つ先に駒があるなら、
         #illegalを返す
@@ -326,14 +333,17 @@ class Board:
                              move['from'][1] + move_piece.attack_squares[i][1]]
                 if move['to'][0] == index[0] and move['to'][1] == index[1]:
                     break
-        #第五段階: 通常moveは間に駒がいるかどうか調べる
+        #第五段階: 通常moveは間に駒がいるかどうか調べる(ただし、桂馬は例外)
         #持ち駒を打つ手は二歩チェックをする
         if move['from'] != 'hand':
-            route_squares = self.return_route(move)
-            for sq in route_squares:
-                if self.pieces[sq[0]][sq[1]] != None:#障害物あり
-                    return False
-        elif move['hand_piece_index'] == 0 and self.is_double_pawn(move):
+            if move_piece.name == 'knight':
+                pass
+            else:
+                route_squares = self.return_route(move)
+                for sq in route_squares:
+                    if self.pieces[sq[0]][sq[1]] != None:#障害物あり
+                        return False
+        elif self.is_double_pawn(move):
             return False
         return True
 
@@ -345,6 +355,8 @@ class Board:
         else:
             piece = self.pieces[move['from'][0]][move['from'][1]]
         if piece.name not in ['pawn', 'lance', 'knight']:
+            return False
+        if move.get('+'):
             return False
         
         if move['to'][0] == 0 and self.turn == BLACK:
@@ -397,8 +409,8 @@ class Board:
                     for i in range(len(piece.attack_squares)):
                         index =  (y + piece.attack_squares[i][0],
                                      x + piece.attack_squares[i][1])
-                    moves.append({'from': (y, x), 'to': index, '+': False})
-                    moves.append({'from': (y, x), 'to': index, '+': True})
+                        moves.append({'from': (y, x), 'to': index, '+': False})
+                        moves.append({'from': (y, x), 'to': index, '+': True})
         piece_list = ['P', 'L', 'N', 'S' 'G', 'B', 'R']
         ind = 0
         for p in piece_list:
@@ -415,14 +427,16 @@ class Board:
         for i in range(len(candidate_moves)):
             if self.is_legal(candidate_moves[i]):
                 legal_moves.append(self.move_to_usi(candidate_moves[i]))
-        return legal_moves
+        return list(set(legal_moves))
 
     def is_double_pawn(self, move):
+        if move['from'] != 'hand':
+            return False
         if move['hand_piece_index'] != 0:
             return False
-        if self.turn == BLACK and self.black_pawn_file[move['to'][1]] != None:
+        if self.turn == BLACK and self.black_pawn_file[move['to'][1]] == 1:
             return True
-        elif self.turn == WHITE and self.white_pawn_file[move['to'][1]] != None:
+        elif self.turn == WHITE and self.white_pawn_file[move['to'][1]] == 1:
             return True
         return False
 
@@ -526,5 +540,3 @@ class Board:
 
     def is_gameover(self):
         return len(self.gen_legal_moves()) == 0
-
-
