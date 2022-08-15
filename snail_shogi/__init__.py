@@ -296,12 +296,15 @@ class Board:
             if move_piece.color != self.turn:
                 return False
         #第二段階: 移動先が盤面の外　
-        #もしくは、駒が成る手なのに移動元・移動先の両方とも成れない場所の場合は
+        #もしくは、駒が成る手なのに移動元・移動先の両方とも成れない場所の場合、
+        #または、成れない駒が成ろうとした場合は
         #illegalを返す
         index = move['to']
         if min(index) < 0 or max(index) > 8:
             return False
         if move.get('+'):
+            if not move_piece.is_promotable:
+                return False
             sq = self.squares[index[0]][index[1]]
             sq2 = self.squares[move['from'][0]][move['from'][1]]
             if self.turn == BLACK:
