@@ -47,6 +47,7 @@ class Board:
         else:
             self.set_sfen(sfen)
         self.board_history = [self.return_sfen()]
+        self.generated_legal_moves = {}
 
     def __str__(self):
         output = ''
@@ -350,6 +351,20 @@ class Board:
             return False
         return True
 
+    def is_attackable(self, move):
+        from_sq = move['from']
+        to_sq = move['to']
+        if max(to_sq) > 8 or min(to_sq) < 0:
+            return False
+        if self.pieces[from_sq[0]][from_sq[1]].name == 'knight':
+            return True
+        else:
+            route_squares = self.return_route(move)
+            for sq in route_squares:
+                if self.pieces[sq[0]][sq[1]] != None:#障害物あり
+                    return False
+        return True
+
     def cannot_move_piece(self, move):
         target_piece = ['P', 'L', 'N']
         if move['from'] == 'hand':
@@ -380,9 +395,10 @@ class Board:
         if piece.name != 'pawn':
             return False
         self.push(move)
-        if self.is_gameover():
-            self.pop()
-            return True
+        if self.is_check():
+            if self.is_gameover():
+                self.pop()
+                return True
         self.pop()
         return False
 
@@ -414,23 +430,26 @@ class Board:
                                      x + piece.attack_squares[i][1])
                         moves.append({'from': (y, x), 'to': index, '+': False})
                         moves.append({'from': (y, x), 'to': index, '+': True})
-        piece_list = ['P', 'L', 'N', 'S' 'G', 'B', 'R']
-        ind = 0
-        for p in piece_list:
-            if self.pieces_in_hand[{BLACK: 0, WHITE: 1}[self.turn]][ind] > 0:
+        piece_list = self.hand_piece_index_dict.keys()
+        for p in range(len(piece_list)):
+            if self.pieces_in_hand[{BLACK: 0, WHITE: 1}[self.turn]][p] > 0:
                 for j in range(9):
                     for k in range(9):
-                        moves.append({'from': 'hand', 'to': (j, k), 'hand_piece_index': ind})
-            ind += 1
+                        moves.append({'from': 'hand', 'to': (j, k), 'hand_piece_index': p})
         return moves
 
     def gen_legal_moves(self):
+        sfen = self.return_sfen()
+        if sfen in self.generated_legal_moves.keys():
+            return self.generated_legal_moves[sfen] 
         candidate_moves = self.gen_candidate_moves()
         legal_moves = []
         for i in range(len(candidate_moves)):
             if self.is_legal(candidate_moves[i]):
                 legal_moves.append(self.move_to_usi(candidate_moves[i]))
-        return list(set(legal_moves))
+        legal_moves = list(set(legal_moves))
+        self.generated_legal_moves[sfen] = legal_moves
+        return legal_moves
 
     def is_double_pawn(self, move):
         if move['from'] != 'hand':
@@ -525,7 +544,7 @@ class Board:
                         index =  (y + piece.attack_squares[i][0],
                                      x + piece.attack_squares[i][1])
                         move = {'from': (y,x), 'to': index, '+': False}
-                        if index not in attack_square and self.is_legal_pseudo(move):
+                        if index not in attack_square and self.is_attackable(move):
                             attack_square.append(index)
         self.turn = color_backup
         return attack_square
