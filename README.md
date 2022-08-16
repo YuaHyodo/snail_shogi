@@ -17,6 +17,19 @@
 - 速度が欲しい方は、cshogi( https://github.com/TadaoYamaoka/cshogi )、
 python-shogi( https://github.com/gunyarakun/python-shogi )あたりを使う事を強く推奨する。
 
+# 皆さんのPCで使えるようにする方法
+- snail_shogiは、Ari-Shogi-Server( https://github.com/YuaHyodo/Ari-Shogi-Server )などの実行に必要です。
+- 注意: 間違っているやり方の可能性が非常に高い
+- 警告: このやり方でのインストールはまだ試していない。
+- 間違いの指摘を大募集
+
+## 手順
+- 1: ダウンロードする
+- 2: コマンドプロンプトを開く
+- 3: cdコマンドでsetup.pyがあるディレクトリまで移動する
+- 4: "python setup.py install"と入力してエンターキーを押す
+- 5: 終わり
+
 # ライセンス
 - snail_shogiはMITライセンスです。
 - 詳細はLICENSEファイルをご確認ください。
