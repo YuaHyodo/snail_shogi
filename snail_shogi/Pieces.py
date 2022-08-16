@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from Piece_base import Piece_base as base
+from .Piece_base import Piece_base as base
 
 BLACK = True
 WHITE = False

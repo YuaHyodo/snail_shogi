@@ -23,7 +23,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from Pieces import*
+from .Pieces import*
+from .Piece_base import*
 
 k = '\n'
 
@@ -244,6 +245,26 @@ class Board:
         if '+' in usimove:
             move['+'] = True
         return move
+
+    def csamove_to_usi(self, csamove):
+        csa_promoted = ['TO', 'NY', 'NK', 'NG', 'UM', 'RY']
+        promote_move = False
+        for i in csa_promoted:
+            if i in csamove:
+                promote_move = True
+                break
+        usimove = ''
+        d = {'1': 'a', '2': 'b', '3': 'c', '4': 'd', '5': 'e', '6': 'f', '7': 'g', '8': 'h', '9': 'i'}
+        d2 = {'FU': 'P', 'KY': 'L', 'KE': 'N', 'GI': 'S', 'KI': 'G', 'KA': 'B', 'HI': 'R'}
+        if csamove[0] == '0':
+            usimove += (d2[csamove[-2] + csamove[-1]] + '*')
+        else:
+            usimove = csamove[0] + d[csamove[1]]
+        usimove += (csamove[2] + d[csamove[3]])
+        if promote_move:
+            if d2.get(csamove[-2] + csamove[-1]) != None:
+                usimove += '+'
+        return usimove
 
     def return_route(self, move):
         """
@@ -568,3 +589,51 @@ class Board:
 
     def is_gameover(self):
         return len(self.gen_legal_moves()) == 0
+
+    def is_nyugyoku(self):
+        if self.is_check():
+            return False
+        color = {BLACK: 'black', WHITE: 'white'}[self.turn]
+        king_sq = self.king_square[color]
+        sq2 = self.squares[king_sq[0]][king_sq[1]]
+        if self.turn == BLACK:
+            if not sq2.is_black_promotable_square:
+                return False
+        else:
+            if not sq2.is_white_promotable_square:
+                return False
+        nyugyoku_point = 0
+        tekizin_piece_num = 0
+        for y in range(9):
+            for x in range(9):
+                piece = self.pieces[y][x]
+                sq = self.squares[y][x]
+                if piece != None:
+                    if self.turn == BLACK:
+                        if sq.is_black_promotable_square:
+                            tekizin_piece_num += 1
+                            if piece.in_hand in ['B', 'R']:
+                                nyugyoku_point += 5
+                            else:
+                                nyugyoku_point += 1
+                    else:
+                        if sq.is_white_promotable_square:
+                            tekizin_piece_num += 1
+                            if piece.in_hand in ['B', 'R']:
+                                nyugyoku_point += 5
+                            else:
+                                nyugyoku_point += 1
+        if self.turn == BLACK:
+            hand_pieces = self.pieces_in_hand[0]
+        else:
+            hand_pieces = self.pieces_in_hand[1]
+        for i in range(len(hand_pieces)):
+            point = 1
+            if i in [5, 6]:
+                point = 5
+            nyugyoku_point += (hand_pieces[i] * point)
+        if self.turn == BLACK and nyugyoku_point >= 28 and tekizin_piece_num >= 10:
+            return True
+        if self.turn == WHITE and nyugyoku_point >= 27 and tekizin_piece_num >= 10:
+            return True
+        return False
