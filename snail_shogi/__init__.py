@@ -92,6 +92,7 @@ class Board:
         return
 
     def set_startpos(self):
+        self.init_board()
         b = BLACK
         w = WHITE
         self.pieces = [[Lance(w), Knight(w), Silver(w), Gold(w), King(w), Gold(w), Silver(w), Knight(w), Lance(w)],
@@ -111,6 +112,7 @@ class Board:
         return
 
     def set_sfen(self, sfen):
+        self.init_board()
         sfen = sfen.split(' ')
         ind = 0
         numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
