@@ -6,6 +6,7 @@
 - 今のところはPython標準ライブラリすらimportしていない。(setup.py以外)
 - 大変汚い実装・驚異的遅さ・そして低機能
 - リバーシ(オセロ)版はこちら: https://github.com/YuaHyodo/snail_reversi
+- チェス版はこちら: https://github.com/YuaHyodo/Katatsumuri_Chess
 
 # 機能
 - 合法手生成などの基本的な機能
