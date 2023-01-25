@@ -249,6 +249,10 @@ class Board:
         return move
 
     def csamove_to_usi(self, csamove):
+        """
+        csamoveはCSA形式の指し手。str型
+        これはCSA形式の指し手をUSI形式のものに変換するコード
+        """
         csa_promoted = ['TO', 'NY', 'NK', 'NG', 'UM', 'RY']
         promote_move = False
         for i in csa_promoted:
@@ -264,8 +268,12 @@ class Board:
             usimove = csamove[0] + d[csamove[1]]
         usimove += (csamove[2] + d[csamove[3]])
         if promote_move:
-            if d2.get(csamove[-2] + csamove[-1]) != None:
-                usimove += '+'
+            #成り駒が移動した際のチェック
+            #移動元の駒が成り駒だったらそのまま、そうでなかったら成りを意味する+を末尾につける
+            index = self.usi_to_index(usimove[0:2])
+            p = self.pieces[index[0]][index[1]]
+            if p != None and p.is_promotion == False:
+                usimove = usimove + '+'
         return usimove
 
     def return_route(self, move):
