@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .Pieces import*
+from .Pieces import*    
 from .Piece_base import*
 
 k = '\n'
@@ -37,17 +37,21 @@ class Board:
                                         '+P': Promotion_Pawn, '+L': Promotion_Lance,
                                         '+N': Promotion_Knight, '+S': Promotion_Silver,
                                         '+B': Promotion_Bishop, '+R': Promotion_Rook}
+        self.piece_name_to_class = {'pawn': Pawn, 'lance': Lance, 'knight': Knight, 'silver': Silver, 'gold': Gold,
+                                        'bishop': Bishop, 'rook': Rook, 'king': King,
+                                        'pawn+': Promotion_Pawn, 'lance+': Promotion_Lance,
+                                        'knight+': Promotion_Knight, 'silver+': Promotion_Silver,
+                                        'bishop+': Promotion_Bishop, 'rook+': Promotion_Rook}
         self.piece_black_to_white = {'P': 'p', 'L': 'l', 'N': 'n', 'S': 's', 'G': 'g', 'B': 'b', 'R': 'r', 'K': 'k',
                                                    '+P': '+p', '+L': '+l', '+N': '+n', '+S': '+s', '+B': '+b', '+R': '+r'}
         self.piece_white_to_black = {v: k for k, v in self.piece_black_to_white.items()}
         self.color_change_dict = {BLACK: WHITE, WHITE: BLACK}
-        
-        self.init_board()
         if sfen == None:
             self.set_startpos()
         else:
             self.set_sfen(sfen)
-        self.board_history = [self.return_sfen()]
+        #self.board_history = [self.return_sfen()]
+        self.moves_history = {'startpos': self.return_sfen(), 'moves': []}
         self.generated_legal_moves = {}
 
     def __str__(self):
@@ -521,6 +525,10 @@ class Board:
         return
                         
     def push(self, move):
+        #盤を戻す時に使う情報
+        #index_move: move
+        #to_hand_piece: 取られた駒
+        history_move = {'move': move, 'to_hand_piece': None}
         if move['from'] == 'hand':
             index = move['hand_piece_index']
             piece = self.piece_to_class[self.hand_piece_index_dict2[index]]
@@ -533,6 +541,8 @@ class Board:
             piece = self.pieces[move['from'][0]][move['from'][1]]
             to_sq = self.pieces[move['to'][0]][move['to'][1]]
             if to_sq != None:
+                #移動先に駒がある
+                history_move['to_hand_piece'] = {'name': to_sq.name, 'color': to_sq.color}
                 index = self.hand_piece_index_dict[to_sq.in_hand]
                 if self.turn == BLACK:
                     self.pieces_in_hand[0][index] += 1
@@ -550,7 +560,8 @@ class Board:
             self.pieces[move['from'][0]][move['from'][1]] = None
         self.update_pawn_file()
         self.change_turn()
-        self.board_history.append(self.return_sfen())
+        #self.board_history.append(self.return_sfen())
+        self.moves_history['moves'].append(history_move)
         return
 
     def push_usi(self, move):
@@ -559,9 +570,43 @@ class Board:
         return
 
     def pop(self):
-        self.board_history.pop(-1)
-        self.init_board()
-        self.set_sfen(self.board_history[-1])
+        self.change_turn()#手番を反転して戻す
+        lastmove = self.moves_history['moves'].pop(-1)
+        if lastmove['move']['from'] == 'hand':
+            #持ち駒を打つ手だった場合
+            sq = self.pieces[lastmove['move']['to'][0]][lastmove['move']['to'][1]]
+            index = self.hand_piece_index_dict[sq.in_hand]
+            if self.turn == BLACK:
+                self.pieces_in_hand[0][index] += 1#駒台に戻す
+            else:
+                self.pieces_in_hand[1][index] += 1
+            self.pieces[lastmove['move']['to'][0]][lastmove['move']['to'][1]] = None#盤上から消す
+            self.update_pawn_file()
+            return
+        #それ以外
+        piece = self.pieces[lastmove['move']['to'][0]][lastmove['move']['to'][1]]#移動を行った駒
+        if lastmove['move'].get('+'):
+            #成る前の状態に戻す
+            self.pieces[lastmove['move']['from'][0]][lastmove['move']['from'][1]] = self.piece_to_class[piece.in_hand](self.turn)
+        else:
+            self.pieces[lastmove['move']['from'][0]][lastmove['move']['from'][1]] = piece
+            if piece.name == 'king':
+                if self.turn == BLACK:
+                    self.king_square['black'] = lastmove['move']['from']
+                else:
+                    self.king_square['white'] = lastmove['move']['from']
+        if lastmove['to_hand_piece'] is None:
+            self.pieces[lastmove['move']['to'][0]][lastmove['move']['to'][1]] = None
+        else:
+            #取られた駒を盤に戻す
+            piece = self.piece_name_to_class[lastmove['to_hand_piece']['name']](lastmove['to_hand_piece']['color'])
+            self.pieces[lastmove['move']['to'][0]][lastmove['move']['to'][1]] = piece
+            index = self.hand_piece_index_dict[piece.in_hand]
+            if self.turn == BLACK:
+                self.pieces_in_hand[0][index] -= 1
+            else:
+                self.pieces_in_hand[1][index] -= 1
+        self.update_pawn_file()
         return
 
     def return_attack_square(self, color):
