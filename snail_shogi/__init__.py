@@ -46,13 +46,17 @@ class Board:
                                                    '+P': '+p', '+L': '+l', '+N': '+n', '+S': '+s', '+B': '+b', '+R': '+r'}
         self.piece_white_to_black = {v: k for k, v in self.piece_black_to_white.items()}
         self.color_change_dict = {BLACK: WHITE, WHITE: BLACK}
+
+        self.king_d = {(i // 9, i % 9): self.return_d((i // 9, i % 9)) for i in range(81)}#マスの座標から同じダイアゴナルにあるマスのlistを取得できる
+
+        self.is_check_memo = {}
+        self.generated_legal_moves = {}
         if sfen == None:
             self.set_startpos()
         else:
             self.set_sfen(sfen)
         #self.board_history = [self.return_sfen()]
         self.moves_history = {'startpos': self.return_sfen(), 'moves': []}
-        self.generated_legal_moves = {}
 
     def __str__(self):
         output = ''
@@ -68,6 +72,17 @@ class Board:
             output += k
         output += ('Black:' + str(self.pieces_in_hand[0]) + k)
         output += ('White:' + str(self.pieces_in_hand[1]) + k)
+        return output
+
+    def return_d(self, sq):
+        """入力されたマスと同じダイアゴナルにあるマスを返す"""
+        output = []
+        for i in range(1, 9):
+            output.append((sq[0] + i, sq[1] + i))
+            output.append((sq[0] + i, sq[1] - i))
+            output.append((sq[0] - i, sq[1] + i))
+            output.append((sq[0] - i, sq[1] - i))
+        output = [i for i in output if (min(i) >= 0 and max(i) <= 8)]
         return output
 
     def copy(self):
@@ -93,6 +108,8 @@ class Board:
                     rank[x].is_black_promotable_square = True
             self.squares.append(rank)
             self.pieces.append(pieces_rank)
+        self.is_check_memo.clear()
+        self.generated_legal_moves.clear()
         return
 
     def set_startpos(self):
@@ -371,8 +388,8 @@ class Board:
         if move['from'] == 'hand':
             pass
         else:
-            for i in range(len(move_piece.attack_squares) + 1):
-                if i == len(move_piece.attack_squares):
+            for i in range(move_piece.len_attack_squares + 1):
+                if i == move_piece.len_attack_squares:
                     return False
                 index = [move['from'][0] + move_piece.attack_squares[i][0],
                              move['from'][1] + move_piece.attack_squares[i][1]]
@@ -395,14 +412,12 @@ class Board:
     def is_attackable(self, move):
         from_sq = move['from']
         to_sq = move['to']
-        if max(to_sq) > 8 or min(to_sq) < 0:
-            return False
         if self.pieces[from_sq[0]][from_sq[1]].name == 'knight':
             return True
         else:
             route_squares = self.return_route(move)
             for sq in route_squares:
-                if self.pieces[sq[0]][sq[1]] != None:#障害物あり
+                if self.pieces[sq[0]][sq[1]] is not None:#障害物あり
                     return False
         return True
 
@@ -463,14 +478,12 @@ class Board:
         for y in range(9):
             for x in range(9):
                 piece = self.pieces[y][x]
-                if piece == None or piece.color != self.turn:
-                    pass
-                else:
-                    for i in range(len(piece.attack_squares)):
-                        index =  (y + piece.attack_squares[i][0],
-                                     x + piece.attack_squares[i][1])
-                        moves.append({'from': (y, x), 'to': index, '+': False})
-                        moves.append({'from': (y, x), 'to': index, '+': True})
+                if piece is None or piece.color != self.turn:
+                    continue
+                for i in range(piece.len_attack_squares):
+                    index =  (y + piece.attack_squares[i][0], x + piece.attack_squares[i][1])
+                    moves.append({'from': (y, x), 'to': index, '+': False})
+                    moves.append({'from': (y, x), 'to': index, '+': True})
         piece_list = self.hand_piece_index_dict.keys()
         for p in range(len(piece_list)):
             if self.pieces_in_hand[{BLACK: 0, WHITE: 1}[self.turn]][p] > 0:
@@ -492,6 +505,23 @@ class Board:
         self.generated_legal_moves[sfen] = legal_moves
         return legal_moves
 
+    def gen_legal_index_moves(self, gameover_check=False):
+        candidate_moves = self.gen_candidate_moves()
+        legal_moves = []
+        for i in range(len(candidate_moves)):
+            if self.is_legal(candidate_moves[i]):
+                legal_moves.append(candidate_moves[i])
+                if gameover_check:
+                    return legal_moves
+        return legal_moves
+
+    def gen_legal_index_moves2(self):
+        candidate_moves = self.gen_candidate_moves()
+        for i in range(len(candidate_moves)):
+            if self.is_legal(candidate_moves[i]):
+                yield candidate_moves[i]
+        return
+
     def is_double_pawn(self, move):
         if move['from'] != 'hand':
             return False
@@ -504,6 +534,57 @@ class Board:
         return False
 
     def is_suicide_move(self, move):
+        check = self.is_check()
+        if move['from'] == 'hand':
+            #持ち駒を打つ手で自殺手になるのは王手回避をしなかった場合のみ
+            if not check:
+                return False
+        else:#持ち駒を打つ手以外
+            if self.turn == BLACK:
+                king = self.king_square['black']
+            else:
+                king = self.king_square['white']
+            if (not check) and (move['from'][0] != king[0] or move['from'][1] != king[1]):
+                #王手されていない場合の玉と同じランク/ファイル/ダイアゴナルに居ない駒が移動する手は自殺手にならない 
+                d = self.king_d[(king[0], king[1])]
+                if move['from'] not in d:
+                    if move['from'][0] != king[0] and move['from'][1] != king[1]:
+                        return False
+                #自玉と同じダイアゴナルに相手の角行/竜馬が、
+                #自玉と同じランクに飛車/竜王が、
+                #自玉と同じファイルに香車/飛車/竜王が
+                #いない場合は自殺手にならない
+                s = True
+                if move['from'] in d:
+                    #動かす駒が玉と同じダイアゴナルにある場合
+                    for i in range(len(d)):
+                        p = self.pieces[d[i][0]][d[i][1]]
+                        if p is None or p.color == self.turn:
+                            continue
+                        if p.name in ('bishop', 'bishop+'):
+                            #自玉と同じダイアゴナルに角行/竜馬がある
+                            s = False
+                            break
+                elif move['from'][0] == king[0]:
+                    #動かす駒が玉と同じランクにある場合  
+                    for i in range(9):
+                        p = self.pieces[king[0]][i]
+                        if p is None or p.color == self.turn:
+                            continue
+                        if p.name in ('rook', 'rook+'):
+                            s = False
+                            break
+                elif move['from'][1] == king[1]:
+                    #動かす駒が玉と同じファイルにある場合
+                    for i in range(9):
+                        p = self.pieces[i][king[1]]
+                        if p is None or p.color == self.turn:
+                            continue
+                        if p.name in ('lance', 'rook', 'rook+'):
+                            s = False
+                            break
+                if s:
+                    return False
         self.push(move)
         self.change_turn()
         is_suicide = self.is_check()
@@ -619,19 +700,22 @@ class Board:
         for y in range(9):
             for x in range(9):
                 piece = self.pieces[y][x]
-                if piece == None or piece.color != color:
-                    pass
-                else:
-                    for i in range(len(piece.attack_squares)):
-                        index =  (y + piece.attack_squares[i][0],
-                                     x + piece.attack_squares[i][1])
-                        move = {'from': (y,x), 'to': index, '+': False}
-                        if index not in attack_square and self.is_attackable(move):
-                            attack_square.append(index)
+                if piece is None or piece.color != color:
+                    continue
+                for sq in piece.attack_squares:
+                    index =  (y + sq[0], x + sq[1])
+                    if min(index) < 0 or max(index) > 8:
+                        continue
+                    move = {'from': (y, x), 'to': index, '+': False}
+                    if (index not in attack_square) and self.is_attackable(move):
+                        attack_square.append(index)
         self.turn = color_backup
         return attack_square
 
     def is_check(self):
+        key = self.return_sfen()
+        if key in self.is_check_memo:
+            return self.is_check_memo[key]
         color = {BLACK: 'black', WHITE: 'white'}[self.turn]
         king_sq = self.king_square[color]
         check = False
@@ -640,10 +724,11 @@ class Board:
             if sq[0] == king_sq[0] and sq[1] == king_sq[1]:
                 check = True
                 break
+        self.is_check_memo[key] = check
         return check
 
     def is_gameover(self):
-        return len(self.gen_legal_moves()) == 0
+        return len(self.gen_legal_index_moves(gameover_check=True)) == 0
 
     def is_nyugyoku(self):
         if self.is_check():

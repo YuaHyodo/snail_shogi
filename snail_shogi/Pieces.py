@@ -46,10 +46,13 @@ class Pawn(base):
             self.attack_squares = ((-1, 0),)
             self.symbol['simple'] = '[P]'
             self.symbol['normal'] = '[A歩]'
+            self.usi = 'P'
         else:
             self.attack_squares = ((1, 0),)
             self.symbol['simple'] = '[p]'
             self.symbol['normal'] = '[V歩]'
+            self.usi = 'p'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = False
         self.is_promotable = True
@@ -63,10 +66,13 @@ class Lance(base):
             self.attack_squares = ((-1, 0), (-2, 0), (-3, 0), (-4, 0), (-5, 0), (-6, 0), (-7, 0), (-8, 0), (-9, 0))
             self.symbol['simple'] = '[L]'
             self.symbol['normal'] = '[A香]'
+            self.usi = 'L'
         else:
             self.attack_squares = ((1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0))
             self.symbol['simple'] = '[ l ]'
             self.symbol['normal'] = '[V香]'
+            self.usi = 'l'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = False
         self.is_promotable = True
@@ -80,10 +86,13 @@ class Knight(base):
             self.attack_squares = ((-2, -1), (-2, 1))
             self.symbol['simple'] = '[N]'
             self.symbol['normal'] = '[A桂]'
+            self.usi = 'N'
         else:
             self.attack_squares = ((2, -1), (2, 1))
             self.symbol['simple'] = '[n]'
             self.symbol['normal'] = '[V桂]'
+            self.usi = 'n'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = False
         self.is_promotable = True
@@ -97,10 +106,13 @@ class Silver(base):
             self.attack_squares = ((-1, -1), (-1, 0), (-1, 1), (1, -1), (1, 1))
             self.symbol['simple'] = '[S]'
             self.symbol['normal'] = '[A銀]'
+            self.usi = 'S'
         else:
             self.attack_squares = ((1, -1), (1, 0), (1, 1), (-1, -1), (-1, 1))
             self.symbol['simple'] = '[s]'
             self.symbol['normal'] = '[V銀]'
+            self.usi = 's'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = False
         self.is_promotable = True
@@ -114,10 +126,13 @@ class Gold(base):
             self.attack_squares = Gold_attack_squares_black
             self.symbol['simple'] = '[G]'
             self.symbol['normal'] = '[A金]'
+            self.usi = 'G'
         else:
             self.attack_squares = Gold_attack_squares_white
             self.symbol['simple'] = '[ g ]'
             self.symbol['normal'] = '[V金]'
+            self.usi = 'g'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = False
         self.is_promotable = False
@@ -135,9 +150,12 @@ class Bishop(base):
         if color == BLACK:
             self.symbol['simple'] = '[B]'
             self.symbol['normal'] = '[A角]'
+            self.usi = 'B'
         else:
             self.symbol['simple'] = '[ b ]'
             self.symbol['normal'] = '[V角]'
+            self.usi = 'b'
+        self.len_attack_squares = len(self.attack_squares)
         self.is_promotion = False
         self.is_promotable = True
         self.in_hand = 'B'
@@ -154,9 +172,12 @@ class Rook(base):
         if color == BLACK:
             self.symbol['simple'] = '[R]'
             self.symbol['normal'] = '[A飛]'
+            self.usi = 'R'
         else:
             self.symbol['simple'] = '[ r ]'
             self.symbol['normal'] = '[V飛]'
+            self.usi = 'r'
+        self.len_attack_squares = len(self.attack_squares)
         self.is_promotion = False
         self.is_promotable = True
         self.in_hand = 'R'
@@ -172,9 +193,12 @@ class King(base):
         if color == BLACK:
             self.symbol['simple'] = '[K]'
             self.symbol['normal'] = '[A玉]'
+            self.usi = 'K'
         else:
             self.symbol['simple'] = '[ k ]'
             self.symbol['normal'] = '[V玉]'
+            self.usi = 'k'
+        self.len_attack_squares = len(self.attack_squares)
         self.is_promotion = False
         self.is_promotable = False
         self.in_hand = 'K'
@@ -187,10 +211,13 @@ class Promotion_Pawn(base):
             self.attack_squares = Gold_attack_squares_black
             self.symbol['simple'] = '[+P]'
             self.symbol['normal'] = '[A+歩]'
+            self.usi = '+P'
         else:
             self.attack_squares = Gold_attack_squares_white
             self.symbol['simple'] = '[+p ]'
             self.symbol['normal'] = '[V+歩]'
+            self.usi = '+p'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = True
         self.is_promotable = False
@@ -204,10 +231,13 @@ class Promotion_Lance(base):
             self.attack_squares = Gold_attack_squares_black
             self.symbol['simple'] = '[+L]'
             self.symbol['normal'] = '[A+香]'
+            self.usi = '+L'
         else:
             self.attack_squares = Gold_attack_squares_white
             self.symbol['simple'] = '[+ l ]'
             self.symbol['normal'] = '[V+香]'
+            self.usi = '+l'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = True
         self.is_promotable = False
@@ -221,10 +251,13 @@ class Promotion_Knight(base):
             self.attack_squares = Gold_attack_squares_black
             self.symbol['simple'] = '[+N]'
             self.symbol['normal'] = '[A+桂]'
+            self.usi = '+N'
         else:
             self.attack_squares = Gold_attack_squares_white
             self.symbol['simple'] = '[+n ]'
             self.symbol['normal'] = '[V+桂]'
+            self.usi = '+n'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = True
         self.is_promotable = False
@@ -238,10 +271,13 @@ class Promotion_Silver(base):
             self.attack_squares = Gold_attack_squares_black
             self.symbol['simple'] = '[+S]'
             self.symbol['normal'] = '[A+銀]'
+            self.usi = '+S'
         else:
             self.attack_squares = Gold_attack_squares_white
             self.symbol['simple'] = '[+s ]'
             self.symbol['normal'] = '[V+銀]'
+            self.usi = '+s'
+        self.len_attack_squares = len(self.attack_squares)
         self.color = color
         self.is_promotion = True
         self.is_promotable = False
@@ -260,9 +296,12 @@ class Promotion_Bishop(base):
         if color == BLACK:
             self.symbol['simple'] = '[+B]'
             self.symbol['normal'] = '[A+角]'
+            self.usi = '+B'
         else:
             self.symbol['simple'] = '[+b ]'
             self.symbol['normal'] = '[V+角]'
+            self.usi = '+b'
+        self.len_attack_squares = len(self.attack_squares)
         self.is_promotion = True
         self.is_promotable = False
         self.in_hand = 'B'
@@ -280,9 +319,12 @@ class Promotion_Rook(base):
         if color == BLACK:
             self.symbol['simple'] = '[+R]'
             self.symbol['normal'] = '[A+飛]'
+            self.usi = '+R'
         else:
             self.symbol['simple'] = '[+r ]'
             self.symbol['normal'] = '[V+飛]'
+            self.usi = '+r'
+        self.len_attack_squares = len(self.attack_squares)
         self.is_promotion = True
         self.is_promotable = False
         self.in_hand = 'R'
